@@ -1,105 +1,127 @@
 var queryString = Math.random();
+var ss = SpreadsheetApp.getActiveSpreadsheet();
+
+// ======
+// !!!
+// IMPORTANT: Create a sheet called 'Rates'.  This is where the values will be written
+// !!!
+// ======
+var ssRates = ss.getSheetByName('Rates');
+
+// ====== Set the target currency =======
+// Don't change if using USD
+// Possible values:
+  // "aud", "brl", "cad", "chf", "clp", "cny", "czk", "dkk", "eur", "gbp", "hkd", "huf",
+  // "idr", "ils", "inr", "jpy", "krw", "mxn", "myr", "nok", "nzd", "php", "pkr", "pln",
+  // "rub", "sek", "sgd", "thb", "try", "twd", "usd", "zar"
+// ======================================
+var targetCurrency = 'usd'
+
+// Grabs all CoinMarketCap data
+if (typeof targetCurrency == 'undefined' || targetCurrency == '') {targetCurrency = 'usd'};
+var coins = getCoins();
 
 function getData() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  
-  //
-  //IMPORTANT: Create a sheet called 'Rates'.  This is where the values will be written
-  //
-  var ssRates = ss.getSheetByName('Rates');
 
-  //Grabbing values from CoinMarketCapAPI
-  //Change the variable name to match the trading symbol
-  //Change the name in the quotes (e.g. are-bees-carebears) to match the 'id' field from https://api.coinmarketcap.com/v1/ticker/
-  //Copy/paste to add more lines as needed
-  
-  var ABC = getRate('are-bees-carebears');
-  var BCD = getRate('berry-cool-doge');
-  var CDE = getRate('coin-dank-enigma');
-  
-  //Grabbing values that are on CoinMarketCap but not in the API
-  //Change the variable name to match the trading symbol
-  //Go to the CoinMarketCap page for the currency (e.g. https://coinmarketcap.com/currencies/zeeyx)
-  //Change the name in quotes (e.g. zeeyx) to match the end of the URL for your currency
-  //Copy/paste to add more lines as needed
-  
-  var ZYX = getWebRate('zeeyx');
-  var YXW = getWebRate('yaaxw');
-  var XWV = getWebRate('xoowv');
+  // ===== Coins to Track ======
+  // Enter the coins you want tracked, each one on a new line, in single quotes, followed by a comma
+  // Use the value in the 'symbol' field here: https://api.coinmarketcap.com/v1/ticker/?limit=0
+  // ===========================
+  var myCoins = [
+    'SALT',
+    'ADA',
+    'MIOTA',
+    'LTC',
+    'ETH',
+    'XRP',
+    'XMR',
+  ]
 
-  //Setting values in a sheet called 'Rates' (defined at the top)
-  //Change the values in getRange() to match the cells in the 'Rates' sheet you want to userAgent
-  //Use the coin symbols from above in setValue()
+  // Set column headers
+  var myColumns = [
+    ['Currency','symbol'],
+    ['Name', 'name'],
+    ['Quantity',''],
+    ['Book Price(USD)',''],
+    ['Market Price(USD)', 'price_usd'],
+    ['Value(USD)',''],
+    ['Value(DKK)',''],
+    ['% Allocation',''],
+    ['Profit(USD)',''],
+    ['Profit(DKK)',''],
+    ['% Change 1H', 'percent_change_1h'],
+    ['% Change 24H', 'percent_change_24h'],
+    ['% Change 7D', 'percent_change_7d'],
+    ['Rank', 'rank'],
+    ['Market Cap USD', 'market_cap_usd'],
+    ['Last Updated', 'last_updated']
+  ]
 
-  ssRates.getRange('B1').setValue(ABC);
-  ssRates.getRange('B2').setValue(BCD);
-  ssRates.getRange('B3').setValue(CDE);
-  
-  ssRates.getRange('B4').setValue(ZYX);
-  ssRates.getRange('B5').setValue(YXW);
-  ssRates.getRange('B6').setValue(XWV);
+  // Creating new Object with our coins for later use.
+  // Each Object's key is the coin symbol
+  var myCoinsObj = {};
+  var myCoinsCount = myCoins.length;
 
-  //VTC wallet balances
-  //Add more as needed with different variable names
+  for (c in myColumns) {
+    ssRates.getRange(1, parseInt(c)+1).setValue(myColumns[c][0]);
+    if (myColumns[c][1]){
+      for (r in myCoins){
+        var n = 0;
+        while (coins[n]['symbol'] !== myCoins[r]) {
+          n++;
+        }
+        myCoinsObj[coins[n]['symbol']] = coins[n];
 
-  var VtcWallet = getVtcBalance("yourAddressHere");
-
-  //Change the value in getRange() to match the cell in spreadsheet
-  //Change the value in setValue() to match the variable above
-
-  ssRates.getRange('E3').setValue(VtcWallet);
-
-  //Ethereum Wallet Balances
-  //Create an account on Etherscan.io
-  //Create an API key at https://etherscan.io/myapikey
-  //Put your API key in below, replacing yourEtherscanApiKey
-  //Add Ethereum address, replacing yourEthAddress
-
-  var EthApiKey = "yourEtherscanApiKey";
-  var EthWallet = getEthBalance(EthApiKey,"yourEthAddress");
-
-  //Putting this value in spreadsheet
-  //Change the value in setValue() to match the variable above
-
-  ssRates.getRange('E1').setValue(EthWallet);
+        ssRates.getRange(parseInt(r)+2, parseInt(c)+1).setValue(myCoinsObj[myCoins[r]][myColumns[c][1]]);
+      }
+    }
+  }
 }
+
+  // ===== VTC wallet balances =======
+  // Add more as needed with different variable names
+  // Change the value in getRange() to match the cell in spreadsheet
+  // Change the value in setValue() to match the variable above
+  // =================================
+
+  //
+  // Uncomment variables to use
+  //
+
+  //var VtcWallet = getVtcBalance("yourAddressHere");
+  //ssRates.getRange('E3').setValue(VtcWallet);
+
+  // ===== Ethereum Wallet Balances =====
+  //Create an account on Etherscan.io
+  // Create an API key at https://etherscan.io/myapikey
+  // Put your API key in below, replacing yourEtherscanApiKey
+  // Add Ethereum address, replacing yourEthAddress
+  // Change the value in setValue() to match the variable above
+  // ====================================
+
+  //
+  // Uncomment variables and follow instructions above to use
+  //
+
+  //var EthApiKey = "yourEtherscanApiKey";
+  //var EthWallet = getEthBalance(EthApiKey,"yourEthAddress");
+  //ssRates.getRange('E1').setValue(EthWallet);
 
   //
   // DON'T TOUCH ANYTHING BELOW
   // IT MAKES THE MAGIC HAPPEN
   //
 
-function getEthBalance(ethApiKey,ethAddress) {
+function getCoins() {
 
-  var obj = JSON.parse (UrlFetchApp.fetch("https://api.etherscan.io/api?module=account&action=balance&address="+ethAddress+"&tag=latest&apikey="+ethApiKey));
-  var data = (obj.result);
-
-  return data * Math.pow(10,-18);
-}
-
-function getVtcBalance(vtcAddress) {
-
-  var obj = UrlFetchApp.fetch("http://explorer.vertcoin.info/ext/getbalance/"+vtcAddress);
-
-  return obj;
-}
-
-function getRate(currencyId) {
-
-  var url = 'https://api.coinmarketcap.com/v1/ticker/' + currencyId + '/';
+  var url = 'https://api.coinmarketcap.com/v1/ticker/?convert=' + targetCurrency + '&limit=0?';
   var response = UrlFetchApp.fetch(url, {'muteHttpExceptions': true});
   var json = response.getContentText();
   var data = JSON.parse(json);
 
-  return parseFloat(data[0]['price_usd']);
+  return data;
 }
 
-function getWebRate(currencyId) {
-  //Example Output: 
-  // '=IMPORTXML("https://coinmarketcap.com/currencies/zeeyx?3908288283","//span[@id=\'quote_price\']")';	
-	
-  var coinScrape1 = '=IMPORTXML("https://coinmarketcap.com/currencies/';
-  var coinScrape2 = '","//span[@id=\'quote_price\']")';
-  
-  return coinScrape1 + currencyId + '?' + queryString + coinScrape2;
+function flatten(arrayOfArrays){
+  return [].concat.apply([], arrayOfArrays);
 }
